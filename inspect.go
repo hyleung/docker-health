@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
@@ -14,9 +15,9 @@ func InspectContainerCommand() interface{} {
 		if client_err != nil {
 			panic(client_err)
 		}
-		log.Info("Connected to Docker daemon...")
+		log.Debug("Connected to Docker daemon...")
 		containerName := c.Args().First()
-		log.Infof("Getting health for %s", containerName)
+		log.Debugf("Getting health for %s", containerName)
 		containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
 		if err != nil {
 			if client.IsErrContainerNotFound(err) {
@@ -26,7 +27,12 @@ func InspectContainerCommand() interface{} {
 				panic(err)
 			}
 		}
-		log.Info(containerJson.State.Health.Status)
+		if containerJson.State.Health != nil {
+			b, _ := json.MarshalIndent(containerJson.State.Health, "", "  ")
+			fmt.Println(string(b))
+		} else {
+			fmt.Println("{}")
+		}
 		return nil
 	}
 }
