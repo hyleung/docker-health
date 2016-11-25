@@ -18,11 +18,14 @@ func main() {
 	app.Name = "docker-health"
 	app.Usage = "Docker healthcheck utility"
 	app.Version = "1.0"
+
+	inspectCommand := InspectCommand{}
 	app.Commands = []cli.Command{
 		{
 			Name:   "inspect",
 			Usage:  "Inspect the Health Check status of a container",
-			Action: InspectContainerCommand(),
+			Flags:  inspectCommand.Flags(),
+			Action: inspectCommand.Command(),
 		},
 		{
 			Name:  "wait",
