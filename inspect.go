@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
@@ -49,8 +48,7 @@ func healthForContainer(docker_client *client.Client, containerName string) {
 		}
 	}
 	if containerJson.State.Health != nil {
-		b, _ := json.MarshalIndent(containerJson.State.Health, "", "  ")
-		fmt.Println(string(b))
+		fmt.Println(toJson(containerJson.State.Health))
 	} else {
 		fmt.Println("{}")
 	}
