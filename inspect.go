@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
 	"github.com/urfave/cli"
 	"golang.org/x/net/context"
 )
@@ -55,5 +56,16 @@ func healthForContainer(docker_client *client.Client, containerName string) {
 }
 
 func healthForAllContainers(docker_client *client.Client) {
-	fmt.Println("To be continued...")
+	list, err := docker_client.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	containerJsonList := make([]types.Health, 0)
+	for _, v := range list {
+		containerJson, _ := docker_client.ContainerInspect(context.Background(), v.ID)
+		if containerJson.State.Health != nil {
+			containerJsonList = append(containerJsonList, *containerJson.State.Health)
+		}
+	}
+	fmt.Println(toJson(containerJsonList))
 }
