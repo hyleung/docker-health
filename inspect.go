@@ -5,11 +5,20 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
 	"github.com/urfave/cli"
 	"golang.org/x/net/context"
 )
 
 type InspectCommand struct {
+}
+
+type ContainerInfo struct {
+	ID           string `json:"Id"`
+	Image        string
+	Name         string
+	HealthConfig *container.HealthConfig
+	Health       *types.Health
 }
 
 func (*InspectCommand) Flags() []cli.Flag {
@@ -49,7 +58,14 @@ func healthForContainer(docker_client *client.Client, containerName string) {
 		}
 	}
 	if containerJson.State.Health != nil {
-		fmt.Println(toJson(containerJson.State.Health))
+		result := ContainerInfo{
+			ID:           containerJson.ID,
+			Image:        containerJson.Config.Image,
+			Name:         containerJson.Name,
+			HealthConfig: containerJson.Config.Healthcheck,
+			Health:       containerJson.State.Health,
+		}
+		fmt.Println(toJson(result))
 	} else {
 		fmt.Println("{}")
 	}
@@ -60,11 +76,18 @@ func healthForAllContainers(docker_client *client.Client) {
 	if err != nil {
 		panic(err)
 	}
-	containerJsonList := make([]types.Health, 0)
+	containerJsonList := make([]ContainerInfo, 0)
 	for _, v := range list {
 		containerJson, _ := docker_client.ContainerInspect(context.Background(), v.ID)
 		if containerJson.State.Health != nil {
-			containerJsonList = append(containerJsonList, *containerJson.State.Health)
+			result := ContainerInfo{
+				ID:           containerJson.ID,
+				Image:        containerJson.Config.Image,
+				Name:         containerJson.Name,
+				HealthConfig: containerJson.Config.Healthcheck,
+				Health:       containerJson.State.Health,
+			}
+			containerJsonList = append(containerJsonList, result)
 		}
 	}
 	fmt.Println(toJson(containerJsonList))
