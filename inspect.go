@@ -5,20 +5,28 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/container"
 	"github.com/urfave/cli"
 	"golang.org/x/net/context"
+	"strings"
+	"time"
 )
 
 type InspectCommand struct {
 }
 
 type ContainerInfo struct {
-	ID           string `json:"Id"`
-	Image        string
-	Name         string
-	HealthConfig *container.HealthConfig
-	Health       *types.Health
+	ID          string `json:"Id"`
+	Image       string
+	Name        string
+	HealthCheck HealthCheck
+	Health      *types.Health
+}
+
+type HealthCheck struct {
+	Command  string        `json:",omitempty"`
+	Interval time.Duration `json:",omitempty"`
+	Timeout  time.Duration `json:",omitempty"`
+	Retries  int           `json:",omitempty"`
 }
 
 func (*InspectCommand) Flags() []cli.Flag {
@@ -59,11 +67,15 @@ func healthForContainer(docker_client *client.Client, containerName string) {
 	}
 	if containerJson.State.Health != nil {
 		result := ContainerInfo{
-			ID:           containerJson.ID,
-			Image:        containerJson.Config.Image,
-			Name:         containerJson.Name,
-			HealthConfig: containerJson.Config.Healthcheck,
-			Health:       containerJson.State.Health,
+			ID:    containerJson.ID,
+			Image: containerJson.Config.Image,
+			Name:  containerJson.Name,
+			HealthCheck: HealthCheck{Command: strings.Join(containerJson.Config.Healthcheck.Test, " "),
+				Interval: containerJson.Config.Healthcheck.Interval,
+				Timeout:  containerJson.Config.Healthcheck.Timeout,
+				Retries:  containerJson.Config.Healthcheck.Retries,
+			},
+			Health: containerJson.State.Health,
 		}
 		fmt.Println(toJson(result))
 	} else {
@@ -81,11 +93,15 @@ func healthForAllContainers(docker_client *client.Client) {
 		containerJson, _ := docker_client.ContainerInspect(context.Background(), v.ID)
 		if containerJson.State.Health != nil {
 			result := ContainerInfo{
-				ID:           containerJson.ID,
-				Image:        containerJson.Config.Image,
-				Name:         containerJson.Name,
-				HealthConfig: containerJson.Config.Healthcheck,
-				Health:       containerJson.State.Health,
+				ID:    containerJson.ID,
+				Image: containerJson.Config.Image,
+				Name:  containerJson.Name,
+				HealthCheck: HealthCheck{Command: strings.Join(containerJson.Config.Healthcheck.Test, " "),
+					Interval: containerJson.Config.Healthcheck.Interval,
+					Timeout:  containerJson.Config.Healthcheck.Timeout,
+					Retries:  containerJson.Config.Healthcheck.Retries,
+				},
+				Health: containerJson.State.Health,
 			}
 			containerJsonList = append(containerJsonList, result)
 		}
