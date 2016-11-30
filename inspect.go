@@ -19,7 +19,6 @@ type ContainerInfo struct {
 	Image       string
 	Name        string
 	HealthCheck HealthCheck
-	Health      *types.Health
 }
 
 type HealthCheck struct {
@@ -27,6 +26,8 @@ type HealthCheck struct {
 	Interval time.Duration `json:",omitempty"`
 	Timeout  time.Duration `json:",omitempty"`
 	Retries  int           `json:",omitempty"`
+	Status   string
+	Result   *types.HealthcheckResult
 }
 
 func (*InspectCommand) Flags() []cli.Flag {
@@ -74,8 +75,9 @@ func healthForContainer(docker_client *client.Client, containerName string) {
 				Interval: containerJson.Config.Healthcheck.Interval,
 				Timeout:  containerJson.Config.Healthcheck.Timeout,
 				Retries:  containerJson.Config.Healthcheck.Retries,
+				Status:   containerJson.State.Health.Status,
+				Result:   containerJson.State.Health.Log[len(containerJson.State.Health.Log)-1],
 			},
-			Health: containerJson.State.Health,
 		}
 		fmt.Println(toJson(result))
 	} else {
@@ -100,8 +102,9 @@ func healthForAllContainers(docker_client *client.Client) {
 					Interval: containerJson.Config.Healthcheck.Interval,
 					Timeout:  containerJson.Config.Healthcheck.Timeout,
 					Retries:  containerJson.Config.Healthcheck.Retries,
+					Status:   containerJson.State.Health.Status,
+					Result:   containerJson.State.Health.Log[len(containerJson.State.Health.Log)-1],
 				},
-				Health: containerJson.State.Health,
 			}
 			containerJsonList = append(containerJsonList, result)
 		}
