@@ -20,6 +20,7 @@ func main() {
 	app.Version = "1.0"
 
 	inspectCommand := InspectCommand{}
+	waitCommand := WaitCommand{}
 	app.Commands = []cli.Command{
 		{
 			Name:   "inspect",
@@ -28,11 +29,10 @@ func main() {
 			Action: inspectCommand.Command(),
 		},
 		{
-			Name:  "wait",
-			Usage: "Wait until a container enters Healthy status",
-			Action: func(c *cli.Context) error {
-				panic("Not Implemented!")
-			},
+			Name:   "wait",
+			Usage:  "Wait until a container enters Healthy status",
+			Flags:  waitCommand.Flags(),
+			Action: waitCommand.Command(),
 		},
 	}
 	app.Run(os.Args)
