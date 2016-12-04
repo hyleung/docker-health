@@ -44,32 +44,40 @@ func (*WaitCommand) Command() interface{} {
 
 func waitOnContainerHealth(docker_client *client.Client, containerName string, timeout int64) error {
 	log.Info(fmt.Sprintf("Waiting on health status of %s", containerName))
-	startTime := time.Now().Unix()
-	for {
-
-		containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
-		if err != nil {
-			if client.IsErrContainerNotFound(err) {
-				return cli.NewExitError(fmt.Sprintf("Container %s not found", containerName), 1)
-			} else {
-				panic(err)
-			}
-		}
-		if containerJson.State.Health == nil {
-			//If the container doesn't have health checks, exit normally
-			log.Info(fmt.Sprintf("Container %s doesn't have any health checks defined", containerName))
-			return nil
-		} else if containerJson.State.Health.Status == "healthy" {
-			log.Info(fmt.Sprintf("Container %s is healthy", containerName))
-			//If the container is healthy, exit normally
-			return nil
+	_, err := docker_client.ContainerInspect(context.Background(), containerName)
+	if err != nil {
+		if client.IsErrContainerNotFound(err) {
+			return cli.NewExitError(fmt.Sprintf("Container %s not found", containerName), 1)
 		} else {
-			elapsed := time.Now().Unix() - startTime
-			if elapsed >= timeout {
-				return cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
-			}
-			//sleep
-			time.Sleep(500 * time.Millisecond)
+			return err
 		}
 	}
+	c := make(chan error, 1)
+	go func() {
+		time.Sleep(time.Duration(timeout) * time.Second)
+		c <- cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
+	}()
+	go func() {
+		for {
+			containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
+			if err != nil {
+				if client.IsErrContainerNotFound(err) {
+					c <- cli.NewExitError(fmt.Sprintf("Container %s not found", containerName), 1)
+				} else {
+					c <- err
+				}
+			}
+			if containerJson.State.Health == nil {
+				//If the container doesn't have health checks, exit normally
+				log.Info(fmt.Sprintf("Container %s doesn't have any health checks defined", containerName))
+				c <- nil
+			} else if containerJson.State.Health.Status == "healthy" {
+				log.Info(fmt.Sprintf("Container %s is healthy", containerName))
+				//If the container is healthy, exit normally
+				c <- nil
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
+	return <-c
 }
