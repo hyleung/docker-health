@@ -52,11 +52,8 @@ func waitOnContainerHealth(docker_client *client.Client, containerName string, t
 			return err
 		}
 	}
+	timeout_channel := time.After(time.Duration(timeout) * time.Second)
 	c := make(chan error, 1)
-	go func() {
-		time.Sleep(time.Duration(timeout) * time.Second)
-		c <- cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
-	}()
 	go func() {
 		for {
 			containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
@@ -79,5 +76,10 @@ func waitOnContainerHealth(docker_client *client.Client, containerName string, t
 			time.Sleep(500 * time.Millisecond)
 		}
 	}()
-	return <-c
+	select {
+	case <-timeout_channel:
+		return cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
+	case result := <-c:
+		return result
+	}
 }
