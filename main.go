@@ -39,6 +39,10 @@ func main() {
 }
 
 func CreateClient() (*client.Client, error) {
-	defaultHeaders := map[string]string{"User-Agent": user_agent}
-	return client.NewClient("unix:///var/run/docker.sock", docker_api_version, nil, defaultHeaders)
+	if os.Getenv("DOCKER_HOST") != "" {
+		return client.NewEnvClient()
+	} else {
+		defaultHeaders := map[string]string{"User-Agent": user_agent}
+		return client.NewClient("unix:///var/run/docker.sock", docker_api_version, nil, defaultHeaders)
+	}
 }
