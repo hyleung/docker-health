@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
 	"github.com/urfave/cli"
 	"golang.org/x/net/context"
 	"time"
@@ -34,8 +35,7 @@ func (*WaitCommand) Command() interface{} {
 		}
 		log.Debug("Connected to Docker daemon...")
 		if c.Bool("all") {
-			log.Info("Not implemented....")
-			return cli.NewExitError("Ruh-roh!", 1)
+			return waitOnAllContainers(docker_client, c.Int64("timeout"))
 		}
 		containerName := c.Args().First()
 		return waitOnContainerHealth(docker_client, containerName, c.Int64("timeout"))
@@ -79,6 +79,42 @@ func waitOnContainerHealth(docker_client *client.Client, containerName string, t
 	select {
 	case <-timeout_channel:
 		return cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
+	case result := <-c:
+		return result
+	}
+}
+
+func waitOnAllContainers(docker_client *client.Client, timeout int64) error {
+	timeout_channel := time.After(time.Duration(timeout) * time.Second)
+	c := make(chan error, 1)
+	go func() {
+		//get the list of containers
+		containers, err := docker_client.ContainerList(context.Background(), types.ContainerListOptions{})
+		if err != nil {
+			panic(err)
+		}
+		for {
+			var count = len(containers)
+			for _, element := range containers {
+				containerJson, _ := docker_client.ContainerInspect(context.Background(), element.ID)
+				if containerJson.State.Health == nil {
+					count = count - 1
+				} else if containerJson.State.Health.Status == "healthy" {
+					count = count - 1
+				}
+
+			}
+			if count == 0 {
+				fmt.Println("All containers healthy...")
+				c <- nil
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		c <- nil
+	}()
+	select {
+	case <-timeout_channel:
+		return cli.NewExitError(fmt.Sprintf("Containers failed to enter healthy state after %d seconds", timeout), 1)
 	case result := <-c:
 		return result
 	}
