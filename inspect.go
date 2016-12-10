@@ -46,16 +46,23 @@ func (*InspectCommand) Flags() []cli.Flag {
 			Name:  "verbose",
 			Usage: "Show detailed health check information on containers",
 		},
+		cli.BoolFlag{
+			Name:  "log, l",
+			Usage: "Enable log output",
+		},
 	}
 
 }
 func (*InspectCommand) Command() interface{} {
 	return func(c *cli.Context) error {
+		if c.Bool("log") {
+			log.SetLevel(log.InfoLevel)
+		}
 		docker_client, client_err := CreateClient()
 		if client_err != nil {
 			panic(client_err)
 		}
-		log.Debug("Connected to Docker daemon...")
+		log.Info("Connected to Docker daemon...")
 		if c.Bool("all") {
 			healthForAllContainers(docker_client, c.Bool("verbose"))
 			return nil
@@ -67,7 +74,7 @@ func (*InspectCommand) Command() interface{} {
 }
 
 func healthForContainer(docker_client *client.Client, containerName string, verbose bool) {
-	log.Debugf("Getting health for %s", containerName)
+	log.Infof("Getting health for %s", containerName)
 	containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {

@@ -24,6 +24,10 @@ func (*WaitCommand) Flags() []cli.Flag {
 			Usage: "Wait timeout, in seconds",
 			Value: 60,
 		},
+		cli.BoolFlag{
+			Name:  "log, l",
+			Usage: "Enable log output",
+		},
 	}
 }
 
@@ -32,6 +36,9 @@ func (*WaitCommand) Command() interface{} {
 		docker_client, client_err := CreateClient()
 		if client_err != nil {
 			panic(client_err)
+		}
+		if c.Bool("log") {
+			log.SetLevel(log.InfoLevel)
 		}
 		log.Debug("Connected to Docker daemon...")
 		if c.Bool("all") {

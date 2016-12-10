@@ -12,6 +12,10 @@ const (
 	docker_api_version = "1.24"
 )
 
+func init() {
+	log.SetLevel(log.WarnLevel)
+}
+
 func main() {
 	log.Debug("Starting docker-health...")
 	app := cli.NewApp()
