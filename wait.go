@@ -79,6 +79,9 @@ func waitOnContainerHealth(docker_client *client.Client, containerName string, t
 				log.Info(fmt.Sprintf("Container %s is healthy", containerName))
 				//If the container is healthy, exit normally
 				c <- nil
+			} else if containerJson.State.Health.Status == "unhealthy" {
+				log.Info(fmt.Sprintf("Container %s is unhealthy", containerName))
+				c <- cli.NewExitError(fmt.Sprintf("Container %s is unhealthy", containerName), 1)
 			}
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -105,11 +108,16 @@ func waitOnAllContainers(docker_client *client.Client, timeout int64) error {
 			for _, element := range containers {
 				containerJson, _ := docker_client.ContainerInspect(context.Background(), element.ID)
 				if containerJson.State.Health == nil {
+					log.Info(fmt.Sprintf("Container %s doesn't have any health checks defined", containerJson.Name))
 					count = count - 1
 				} else if containerJson.State.Health.Status == "healthy" {
+					log.Info(fmt.Sprintf("Container %s is healthy", containerJson.Name))
 					count = count - 1
+				} else if containerJson.State.Health.Status == "unhealthy" {
+					log.Info(fmt.Sprintf("Container %s is in %s state", containerJson.Name, containerJson.State.Health.Status))
+					//we can exit early because we know that it's not possible for all containers to report health status
+					c <- cli.NewExitError(fmt.Sprintf("Container %s is in an unhealthy state", containerJson.Name), 1)
 				}
-
 			}
 			if count == 0 {
 				fmt.Println("All containers healthy...")
