@@ -73,7 +73,7 @@ func (*InspectCommand) Command() interface{} {
 	}
 }
 
-func healthForContainer(docker_client *client.Client, containerName string, verbose bool) {
+func healthForContainer(docker_client client.ContainerAPIClient, containerName string, verbose bool) {
 	log.Infof("Getting health for %s", containerName)
 	containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
 	if err != nil {
@@ -111,7 +111,7 @@ func healthForContainer(docker_client *client.Client, containerName string, verb
 	}
 }
 
-func healthForAllContainers(docker_client *client.Client, verbose bool) {
+func healthForAllContainers(docker_client client.ContainerAPIClient, verbose bool) {
 	list, err := docker_client.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		panic(err)
