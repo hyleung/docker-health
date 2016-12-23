@@ -31,7 +31,13 @@ func TestInspect_healthForContainer_with_no_health(t *testing.T) {
 		},
 	}
 	stub := StubContainerAPIClient{[]types.Container{}, result, nil}
-	healthForContainer(stub, "foo", false)
+	r, err := healthForContainer(stub, "foo", false)
+	if err != nil {
+		t.Error("Unexpected error", err)
+	}
+	if len(r) == 0 {
+		t.Error("Expected non-empty result")
+	}
 }
 
 func TestInspect_healthForContainer_with_health(t *testing.T) {
@@ -49,7 +55,13 @@ func TestInspect_healthForContainer_with_health(t *testing.T) {
 		},
 	}
 	stub := StubContainerAPIClient{[]types.Container{}, result, nil}
-	healthForContainer(stub, "foo", false)
+	r, err := healthForContainer(stub, "foo", false)
+	if err != nil {
+		t.Error("Unexpected error", err)
+	}
+	if len(r) == 0 {
+		t.Error("Expected non-empty result")
+	}
 }
 
 func TestInspect_healthForContainer_with_health_verbose(t *testing.T) {
@@ -81,5 +93,11 @@ func TestInspect_healthForContainer_with_health_verbose(t *testing.T) {
 		},
 	}
 	stub := StubContainerAPIClient{[]types.Container{}, result, nil}
-	healthForContainer(stub, "foo", true)
+	r, err := healthForContainer(stub, "foo", false)
+	if err != nil {
+		t.Error("Unexpected error", err)
+	}
+	if len(r) == 0 {
+		t.Error("Expected non-empty result")
+	}
 }

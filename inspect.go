@@ -64,23 +64,31 @@ func (*InspectCommand) Command() interface{} {
 		}
 		log.Info("Connected to Docker daemon...")
 		if c.Bool("all") {
-			healthForAllContainers(docker_client, c.Bool("verbose"))
+			result, err := healthForAllContainers(docker_client, c.Bool("verbose"))
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(result)
 			return nil
 		}
 		containerName := c.Args().First()
-		healthForContainer(docker_client, containerName, c.Bool("verbose"))
+		result, err := healthForContainer(docker_client, containerName, c.Bool("verbose"))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(result)
 		return nil
 	}
 }
 
-func healthForContainer(docker_client DockerAPIClient, containerName string, verbose bool) {
+func healthForContainer(docker_client DockerAPIClient, containerName string, verbose bool) (string, error) {
 	log.Infof("Getting health for %s", containerName)
 	containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {
-			fmt.Printf("Container '%s' not found", containerName)
+			return fmt.Sprintf("Container '%s' not found", containerName), nil
 		} else {
-			panic(err)
+			return "", err
 		}
 	}
 	if containerJson.State.Health != nil {
@@ -97,24 +105,23 @@ func healthForContainer(docker_client DockerAPIClient, containerName string, ver
 					Result:   containerJson.State.Health.Log[len(containerJson.State.Health.Log)-1],
 				},
 			}
-			fmt.Println(toJson(result))
+			return toJson(result), nil
 		} else {
 			result := ContainerInfoShort{
 				Name:   containerJson.Name,
 				Image:  containerJson.Config.Image,
 				Status: containerJson.State.Health.Status,
 			}
-			fmt.Println(toJson(result))
+			return toJson(result), nil
 		}
-	} else {
-		fmt.Println("{}")
 	}
+	return "{}", nil
 }
 
-func healthForAllContainers(docker_client DockerAPIClient, verbose bool) {
+func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string, error) {
 	list, err := docker_client.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if verbose {
 		containerJsonList := make([]ContainerInfo, 0)
@@ -135,7 +142,7 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) {
 				})
 			}
 		}
-		fmt.Println(toJson(containerJsonList))
+		return toJson(containerJsonList), nil
 	} else {
 		containerJsonList := make([]ContainerInfoShort, 0)
 		for _, v := range list {
@@ -148,6 +155,6 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) {
 				})
 			}
 		}
-		fmt.Println(toJson(containerJsonList))
+		return toJson(containerJsonList), nil
 	}
 }
