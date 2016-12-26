@@ -126,7 +126,10 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 	if verbose {
 		containerJsonList := make([]ContainerInfo, 0)
 		for _, v := range list {
-			containerJson, _ := docker_client.ContainerInspect(context.Background(), v.ID)
+			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
+			if err != nil {
+				return "", err
+			}
 			if containerJson.State.Health != nil {
 				containerJsonList = append(containerJsonList, ContainerInfo{
 					ID:    containerJson.ID,
@@ -146,7 +149,10 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 	} else {
 		containerJsonList := make([]ContainerInfoShort, 0)
 		for _, v := range list {
-			containerJson, _ := docker_client.ContainerInspect(context.Background(), v.ID)
+			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
+			if err != nil {
+				return "", err
+			}
 			if containerJson.State.Health != nil {
 				containerJsonList = append(containerJsonList, ContainerInfoShort{
 					Image:  containerJson.Config.Image,
