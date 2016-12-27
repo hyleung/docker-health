@@ -14,14 +14,13 @@ import (
 type InspectCommand struct {
 }
 
-type ContainerInfo struct {
+type ContainerInfoDetail struct {
+	ContainerInfo
 	ID          string `json:"Id"`
-	Image       string
-	Name        string
 	HealthCheck HealthCheck
 }
 
-type ContainerInfoShort struct {
+type ContainerInfo struct {
 	Image  string
 	Name   string
 	Status string
@@ -93,10 +92,13 @@ func healthForContainer(docker_client DockerAPIClient, containerName string, ver
 	}
 	if containerJson.State.Health != nil {
 		if verbose {
-			result := ContainerInfo{
-				ID:    containerJson.ID,
-				Image: containerJson.Config.Image,
-				Name:  containerJson.Name,
+			result := ContainerInfoDetail{
+				ContainerInfo: ContainerInfo{
+					Image:  containerJson.Config.Image,
+					Name:   containerJson.Name,
+					Status: containerJson.State.Health.Status,
+				},
+				ID: containerJson.ID,
 				HealthCheck: HealthCheck{Command: strings.Join(containerJson.Config.Healthcheck.Test, " "),
 					Interval: containerJson.Config.Healthcheck.Interval,
 					Timeout:  containerJson.Config.Healthcheck.Timeout,
@@ -107,7 +109,7 @@ func healthForContainer(docker_client DockerAPIClient, containerName string, ver
 			}
 			return toJson(result), nil
 		} else {
-			result := ContainerInfoShort{
+			result := ContainerInfo{
 				Name:   containerJson.Name,
 				Image:  containerJson.Config.Image,
 				Status: containerJson.State.Health.Status,
@@ -124,17 +126,20 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 		return "", err
 	}
 	if verbose {
-		containerJsonList := make([]ContainerInfo, 0)
+		containerJsonList := make([]ContainerInfoDetail, 0)
 		for _, v := range list {
 			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
 			if err != nil {
 				return "", err
 			}
 			if containerJson.State.Health != nil {
-				containerJsonList = append(containerJsonList, ContainerInfo{
-					ID:    containerJson.ID,
-					Image: containerJson.Config.Image,
-					Name:  containerJson.Name,
+				containerJsonList = append(containerJsonList, ContainerInfoDetail{
+					ContainerInfo: ContainerInfo{
+						Name:   containerJson.Name,
+						Image:  containerJson.Config.Image,
+						Status: containerJson.State.Health.Status,
+					},
+					ID: containerJson.ID,
 					HealthCheck: HealthCheck{Command: strings.Join(containerJson.Config.Healthcheck.Test, " "),
 						Interval: containerJson.Config.Healthcheck.Interval,
 						Timeout:  containerJson.Config.Healthcheck.Timeout,
@@ -147,14 +152,14 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 		}
 		return toJson(containerJsonList), nil
 	} else {
-		containerJsonList := make([]ContainerInfoShort, 0)
+		containerJsonList := make([]ContainerInfo, 0)
 		for _, v := range list {
 			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
 			if err != nil {
 				return "", err
 			}
 			if containerJson.State.Health != nil {
-				containerJsonList = append(containerJsonList, ContainerInfoShort{
+				containerJsonList = append(containerJsonList, ContainerInfo{
 					Image:  containerJson.Config.Image,
 					Name:   containerJson.Name,
 					Status: containerJson.State.Health.Status,
