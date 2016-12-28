@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
@@ -75,19 +76,19 @@ func (*InspectCommand) Command() interface{} {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(result)
+		fmt.Println(toJson(result))
 		return nil
 	}
 }
 
-func healthForContainer(docker_client DockerAPIClient, containerName string, verbose bool) (string, error) {
+func healthForContainer(docker_client DockerAPIClient, containerName string, verbose bool) (interface{}, error) {
 	log.Infof("Getting health for %s", containerName)
 	containerJson, err := docker_client.ContainerInspect(context.Background(), containerName)
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {
-			return fmt.Sprintf("Container '%s' not found", containerName), nil
+			return ContainerInfo{}, errors.New(fmt.Sprintf("Container '%s' not found", containerName))
 		} else {
-			return "", err
+			return ContainerInfo{}, err
 		}
 	}
 	if containerJson.State.Health != nil {
@@ -107,17 +108,17 @@ func healthForContainer(docker_client DockerAPIClient, containerName string, ver
 					Result:   containerJson.State.Health.Log[len(containerJson.State.Health.Log)-1],
 				},
 			}
-			return toJson(result), nil
+			return result, nil
 		} else {
 			result := ContainerInfo{
 				Name:   containerJson.Name,
 				Image:  containerJson.Config.Image,
 				Status: containerJson.State.Health.Status,
 			}
-			return toJson(result), nil
+			return result, nil
 		}
 	}
-	return "{}", nil
+	return ContainerInfo{}, nil
 }
 
 func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string, error) {
