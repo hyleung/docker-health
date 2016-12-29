@@ -68,7 +68,7 @@ func (*InspectCommand) Command() interface{} {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println(result)
+			fmt.Println(toJson(result))
 			return nil
 		}
 		containerName := c.Args().First()
@@ -121,17 +121,17 @@ func healthForContainer(docker_client DockerAPIClient, containerName string, ver
 	return ContainerInfo{}, nil
 }
 
-func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string, error) {
+func healthForAllContainers(docker_client DockerAPIClient, verbose bool) ([]interface{}, error) {
 	list, err := docker_client.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
-		return "", err
+		return make([]interface{}, 0), err
 	}
 	if verbose {
-		containerJsonList := make([]ContainerInfoDetail, 0)
+		containerJsonList := make([]interface{}, 0)
 		for _, v := range list {
 			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
 			if err != nil {
-				return "", err
+				return make([]interface{}, 0), err
 			}
 			if containerJson.State.Health != nil {
 				containerJsonList = append(containerJsonList, ContainerInfoDetail{
@@ -151,13 +151,13 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 				})
 			}
 		}
-		return toJson(containerJsonList), nil
+		return containerJsonList, nil
 	} else {
-		containerJsonList := make([]ContainerInfo, 0)
+		containerJsonList := make([]interface{}, 0)
 		for _, v := range list {
 			containerJson, err := docker_client.ContainerInspect(context.Background(), v.ID)
 			if err != nil {
-				return "", err
+				return make([]interface{}, 0), err
 			}
 			if containerJson.State.Health != nil {
 				containerJsonList = append(containerJsonList, ContainerInfo{
@@ -167,6 +167,6 @@ func healthForAllContainers(docker_client DockerAPIClient, verbose bool) (string
 				})
 			}
 		}
-		return toJson(containerJsonList), nil
+		return containerJsonList, nil
 	}
 }
