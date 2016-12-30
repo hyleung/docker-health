@@ -49,7 +49,7 @@ func (*WaitCommand) Command() interface{} {
 	}
 }
 
-func waitOnContainerHealth(docker_client client.ContainerAPIClient, containerName string, timeout int64) error {
+func waitOnContainerHealth(docker_client DockerAPIClient, containerName string, timeout int64) error {
 	log.Info(fmt.Sprintf("Waiting on health status of %s", containerName))
 	_, err := docker_client.ContainerInspect(context.Background(), containerName)
 	if err != nil {
@@ -94,7 +94,7 @@ func waitOnContainerHealth(docker_client client.ContainerAPIClient, containerNam
 	}
 }
 
-func waitOnAllContainers(docker_client client.ContainerAPIClient, timeout int64) error {
+func waitOnAllContainers(docker_client DockerAPIClient, timeout int64) error {
 	timeout_channel := time.After(time.Duration(timeout) * time.Second)
 	c := make(chan error, 1)
 	go func() {
