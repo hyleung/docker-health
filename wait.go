@@ -88,7 +88,7 @@ func waitOnContainerHealth(docker_client DockerAPIClient, containerName string, 
 	}()
 	select {
 	case <-timeout_channel:
-		return cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 1)
+		return cli.NewExitError(fmt.Sprintf("Container %s failed to enter healthy state after %d seconds", containerName, timeout), 124)
 	case result := <-c:
 		return result
 	}
