@@ -1,0 +1,15 @@
+- name: go-build
+  service: docker_health
+  command: go test
+- type: parallel
+  steps:
+  - service: docker_health
+    command: sh build.sh darwin 386
+  - service: docker_health
+    command: sh build.sh linux 386
+  - service: docker_health
+    command: sh build.sh linux amd64
+  - service: docker_health
+    command: sh build.sh windows 386
+  - service: docker_health
+    command: sh build.sh windows amd64

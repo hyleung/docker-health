@@ -1,0 +1,10 @@
+docker_health:
+  build:
+    image: docker-health-build
+    dockerfile_path: Dockerfile
+  volumes_from:
+    - data
+data:
+  image: busybox
+  volumes:
+    - ./tmp:/artifacts
