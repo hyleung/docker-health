@@ -1,4 +1,5 @@
 #docker-health
+[ ![Codeship Status for hyleung/docker-health](https://app.codeship.com/projects/dbb6e190-c808-0134-1c2a-5a435d0f4766/status?branch=master)](https://app.codeship.com/projects/198973)
 
 Small command-line utility for working with Docker's built-in health checks.
 
